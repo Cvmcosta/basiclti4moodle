@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-$plugin->version   = 2019052000;
+$plugin->version   = 2020011700;
 $plugin->requires  = 2019051100;
 $plugin->component = 'ltiservice_toolproxy';
 $plugin->dependencies = array(
