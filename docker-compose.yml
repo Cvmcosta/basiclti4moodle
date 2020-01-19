@@ -1,0 +1,52 @@
+version: '3.5'
+services: 
+  mysql_lti4moodle:
+    image: mysql:5.6.46
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=lti4moodle
+    volumes:
+      - ./my.cnf:/etc/mysql/my.cnf:ro
+      - mysql_data_volume:/var/lib/mysql
+    networks:
+      - network_lti4moodle
+  
+  moodle_lti4moodle:
+    image: cvmcosta/lti4moodle:latest
+    volumes:
+      - 'moodle_data_lti4moodle:/moodledata'
+    ports:
+      - '8080:80'
+    # Set the port that moodle will be running on and the hosts for lti and mysql
+    environment: 
+      - PORT=8080
+      - DB_HOST=mysql_lti4moodle
+      - DB_USER=root
+      - DB_PASS=123456
+      - DB_NAME=lti4moodle
+      - ADMIN_USER=root
+      - ADMIN_PASS=123456
+      - LTI_HOST=localhost:3000
+    depends_on:
+      - mysql_lti4moodle
+    networks:
+      - network_lti4moodle
+  lti_lti4moodle:
+    image: cvmcosta/ltidemo:latest
+    environment:
+      - DB_HOST=localhost
+      - DB_DATABASE=ltimoodle
+      - LTI_KEY=LTIKEY
+      - MOODLE_URL=moodle_lti4moodle
+    networks:
+      - network_lti4moodle
+
+volumes:
+ mysql_data_volume:
+   driver: local
+ moodle_data_lti4moodle:
+   driver: local
+  
+networks: 
+  network_lti4moodle:
