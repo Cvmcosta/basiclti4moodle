@@ -20,7 +20,8 @@ services:
       - '8080:80'
     # Set the port that moodle will be running on and the hosts for lti and mysql
     environment: 
-      - PORT=8080
+    # - PROXY_SSL=true 
+      - WWW_ROOT=http://localhost:8080
       - DB_HOST=mysql_lti4moodle
       - DB_USER=root
       - DB_PASS=123456
@@ -38,7 +39,7 @@ services:
       - DB_HOST=localhost
       - DB_DATABASE=ltimoodle
       - LTI_KEY=LTIKEY
-      - MOODLE_URL=moodle_lti4moodle
+      - MOODLE_URL=http://localhost:8080
     networks:
       - network_lti4moodle
     ports:
