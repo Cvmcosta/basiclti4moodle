@@ -41,6 +41,8 @@ services:
       - MOODLE_URL=moodle_lti4moodle
     networks:
       - network_lti4moodle
+    ports:
+      - '3000:3000'
 
 volumes:
  mysql_data_volume:
