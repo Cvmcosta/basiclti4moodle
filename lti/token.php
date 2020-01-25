@@ -32,6 +32,8 @@ use \Firebase\JWT\JWK;
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/lti/locallib.php');
 
+// Defines cache
+$cache = cache::make('mod_lti', 'keyset');
 
 $response = new \mod_lti\local\ltiservice\response();
 
@@ -75,18 +77,44 @@ if ($ok) {
         if (!empty($typeconfig['keytype'])) {
             try {
                 if ($typeconfig['keytype'] === 'JWK_KEYSET' && !empty($typeconfig['publickeyset'])) {
-                    $keyset = file_get_contents($typeconfig['publickeyset']);
-                    $keys = JWK::parseKeySet($keyset);
-                    $jwt = JWT::decode($clientassertion, $keys, array('RS256'));
-                    $ok = true;
+                    // Tries to retrieve the keyset from cache
+                    $keyset = $cache->get($claims['sub']);
+                    if (!$keyset) {
+                        // If keyset was not found, tries getting it from the url
+                        $keyset = file_get_contents($typeconfig['publickeyset']);
+                        $keys = JWK::parseKeySet($keyset);
+                        $jwt = JWT::decode($clientassertion, $keys, array('RS256'));
+                        // If decode is successful, updates cached keyset
+                        $cache->set($claims['sub'], $keyset);
+                        $ok = true;
+                    } else {
+                        // If keyset was found
+                        try {
+                            $keys = JWK::parseKeySet($keyset);
+                            $jwt = JWT::decode($clientassertion, $keys, array('RS256'));
+                            $ok = true;
+                        } catch (Exception $e) {
+                            $message = $e->getMessage();
+                            // Couldn't retrieve correct key from cache, updates cached keyset 
+                            if ($message === '"kid" invalid, unable to lookup correct key') {
+                                $keyset = file_get_contents($typeconfig['publickeyset']);
+                                $keys = JWK::parseKeySet($keyset);
+                                $jwt = JWT::decode($clientassertion, $keys, array('RS256'));
+                                // If decode is successful, updates cached keyset
+                                $cache->set($claims['sub'], $keyset);
+                                $ok = true;
+                            }
+                        }
+                    }
                 } elseif ($typeconfig['keytype'] === 'RSA_KEY' && !empty($typeconfig['publickey'])) {
                     $jwt = JWT::decode($clientassertion, $typeconfig['publickey'], array('RS256'));
                     $ok = true;
                 } else {
+                    $error = 'invalid_keytype_or_key';
                     $ok = false;
-                    $error = 'error_jwt_decode';
                 }
             } catch (Exception $e) {
+                $error = $e->getMessage();
                 $ok = false;
             }
         }

@@ -1351,9 +1351,33 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         if (empty($keyseturl)) {
             throw new moodle_exception('No public keyset configured');
         }
-        $keyset = file_get_contents($keyseturl);
-        $keys = JWK::parseKeySet($keyset);
-        JWT::decode($clientassertion, $keys, array('RS256'));
+        $cache = cache::make('mod_lti', 'keyset');
+        
+        // Attempts to retrieve keyset from cache
+        $keyset = $cache->get($tool->clientid);
+        if (!$keyset) {
+            $keyset = file_get_contents($keyseturl); 
+            $keys = JWK::parseKeySet($keyset);
+            JWT::decode($clientassertion, $keys, array('RS256'));
+            // If decode is successful, updates cached keyset
+            $cache->set($tool->clientid, $keyset);
+        } else {
+            // If keyset was found
+            try {
+                $keys = JWK::parseKeySet($keyset);
+                JWT::decode($clientassertion, $keys, array('RS256'));
+            } catch (Exception $e) {
+                $message = $e->getMessage();
+                // Couldn't retrieve correct key from cache, updates cached keyset 
+                if ($message === '"kid" invalid, unable to lookup correct key') {
+                    $keyset = file_get_contents($keyseturl);
+                    $keys = JWK::parseKeySet($keyset);
+                    JWT::decode($clientassertion, $keys, array('RS256'));
+                    // If decode is successful, updates cached keyset
+                    $cache->set($tool->clientid, $keyset);
+                }
+            }
+        }
     }
     
 
