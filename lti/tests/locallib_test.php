@@ -1077,6 +1077,8 @@ V6L11BWkpzGXSW4Hv43qa+GSYOD2QU68Mb59oSk2OB+BtOLpJofmbGEGgvmwyCI9
 MwIDAQAB
 -----END PUBLIC KEY-----';
 
+        $config->lti_keytype = 'RSA_KEY';
+
         $typeid = lti_add_type($type, $config);
 
         lti_verify_jwt_signature($typeid, '', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4g' .
@@ -1154,6 +1156,7 @@ MwIDAQAB
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
         $config = new stdClass();
+        $config->lti_keytype = 'RSA_KEY';
         $typeid = lti_add_type($type, $config);
 
         $this->expectExceptionMessage('No public key configured');
@@ -1271,6 +1274,7 @@ e+lf4s4OxQawWD79J9/5d3Ry0vbV3Am1FtGJiJvOwRsIfVChDpYStTcHTCMqtvWb
 V6L11BWkpzGXSW4Hv43qa+GSYOD2QU68Mb59oSk2OB+BtOLpJofmbGEGgvmwyCI9
 MwIDAQAB
 -----END PUBLIC KEY-----';
+        $config->lti_keytype = 'RSA_KEY';
 
         $typeid = lti_add_type($type, $config);
 

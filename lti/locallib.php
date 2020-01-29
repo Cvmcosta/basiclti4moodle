@@ -1322,6 +1322,7 @@ function lti_verify_oauth_signature($typeid, $consumerkey) {
  */
 function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
     $tool = lti_get_type($typeid);
+
     // Validate parameters.
     if (!$tool) {
         throw new moodle_exception('errortooltypenotfound', 'mod_lti');
@@ -1334,8 +1335,6 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
 
     $key = $tool->clientid ?? '';
 
-    
-
     if ($consumerkey !== $key) {
         throw new moodle_exception('errorincorrectconsumerkey', 'mod_lti');
     }
@@ -1346,7 +1345,7 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
             throw new moodle_exception('No public key configured');
         }
         JWT::decode($jwtparam, $publickey, array('RS256'));
-    } else {
+    } else if ($typeconfig['keytype'] === 'JWK_KEYSET') {
         $keyseturl = $typeconfig['publickeyset'] ?? '';
         if (empty($keyseturl)) {
             throw new moodle_exception('No public keyset configured');
@@ -1358,26 +1357,28 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         if (!$keyset) {
             $keyset = file_get_contents($keyseturl); 
             $keys = JWK::parseKeySet($keyset);
-            JWT::decode($clientassertion, $keys, array('RS256'));
+            JWT::decode($jwtparam, $keys, array('RS256'));
             // If decode is successful, updates cached keyset
             $cache->set($tool->clientid, $keyset);
         } else {
             // If keyset was found
             try {
                 $keys = JWK::parseKeySet($keyset);
-                JWT::decode($clientassertion, $keys, array('RS256'));
+                JWT::decode($jwtparam, $keys, array('RS256'));
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 // Couldn't retrieve correct key from cache, updates cached keyset 
                 if ($message === '"kid" invalid, unable to lookup correct key') {
                     $keyset = file_get_contents($keyseturl);
                     $keys = JWK::parseKeySet($keyset);
-                    JWT::decode($clientassertion, $keys, array('RS256'));
+                    JWT::decode($jwtparam, $keys, array('RS256'));
                     // If decode is successful, updates cached keyset
                     $cache->set($tool->clientid, $keyset);
                 }
             }
         }
+    } else {
+        throw new moodle_exception('Invalid public key type');
     }
     
 
