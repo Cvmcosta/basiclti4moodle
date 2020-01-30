@@ -22,7 +22,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// Added definition for keyset cache
+defined('MOODLE_INTERNAL') || die();
+
+// Added definition for keyset cache.
 $definitions = [
     'keyset' => [
         'mode' => cache_store::MODE_APPLICATION

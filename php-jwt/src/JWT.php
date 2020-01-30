@@ -31,6 +31,22 @@ class JWT
     public static $leeway = 180;
 
     /**
+     * Decoding error messages. Implemented to catch specific errors when using this library, while still allowing these messages to change.
+     */
+    public static $ERR_EMPTY_KEY = 'Key may not be empty';
+    public static $ERR_WRONG_NUMBER_OF_SEGMENTS = 'Wrong number of segments';
+    public static $ERR_INVALID_HEADER_ENCODING = 'Invalid header encoding';
+    public static $ERR_INVALID_CLAIMS_ENCODING = 'Invalid claims encoding';
+    public static $ERR_INVALID_SIGNATURE_ENCODING = 'Invalid signature encoding';
+    public static $ERR_EMPTY_ALGORITHM = 'Empty algorithm';
+    public static $ERR_ALGORITHM_NOT_SUPPORTED = 'Algorithm not supported';
+    public static $ERR_ALGORITHM_NOT_ALLOWED = 'Algorithm not allowed';
+    public static $ERR_EMPTY_KID = '"kid" empty, unable to lookup correct key';
+    public static $ERR_INVALID_KID = '"kid" invalid, unable to lookup correct key';
+    public static $ERR_SIGNATURE_VERIFICATION = 'Signature verification failed';
+    public static $ERR_EXPIRED_TOKEN = 'Expired token';
+
+    /**
      * Allow the current timestamp to be specified.
      * Useful for fixing a value within unit testing.
      *
@@ -72,45 +88,45 @@ class JWT
         $timestamp = is_null(static::$timestamp) ? time() : static::$timestamp;
 
         if (empty($key)) {
-            throw new InvalidArgumentException('Key may not be empty');
+            throw new InvalidArgumentException(static::$ERR_EMPTY_KEY);
         }
         $tks = explode('.', $jwt);
         if (count($tks) != 3) {
-            throw new UnexpectedValueException('Wrong number of segments');
+            throw new UnexpectedValueException(static::$ERR_WRONG_NUMBER_OF_SEGMENTS);
         }
         list($headb64, $bodyb64, $cryptob64) = $tks;
         if (null === ($header = static::jsonDecode(static::urlsafeB64Decode($headb64)))) {
-            throw new UnexpectedValueException('Invalid header encoding');
+            throw new UnexpectedValueException(static::$ERR_INVALID_HEADER_ENCODING);
         }
         if (null === $payload = static::jsonDecode(static::urlsafeB64Decode($bodyb64))) {
-            throw new UnexpectedValueException('Invalid claims encoding');
+            throw new UnexpectedValueException(static::$ERR_INVALID_CLAIMS_ENCODING);
         }
         if (false === ($sig = static::urlsafeB64Decode($cryptob64))) {
-            throw new UnexpectedValueException('Invalid signature encoding');
+            throw new UnexpectedValueException(static::$ERR_INVALID_SIGNATURE_ENCODING);
         }
         if (empty($header->alg)) {
-            throw new UnexpectedValueException('Empty algorithm');
+            throw new UnexpectedValueException(static::$ERR_EMPTY_ALGORITHM);
         }
         if (empty(static::$supported_algs[$header->alg])) {
-            throw new UnexpectedValueException('Algorithm not supported');
+            throw new UnexpectedValueException(static::$ERR_ALGORITHM_NOT_SUPPORTED);
         }
         if (!in_array($header->alg, $allowed_algs)) {
-            throw new UnexpectedValueException('Algorithm not allowed');
+            throw new UnexpectedValueException(static::$ERR_ALGORITHM_NOT_ALLOWED);
         }
         if (is_array($key) || $key instanceof \ArrayAccess) {
             if (isset($header->kid)) {
                 if (!isset($key[$header->kid])) {
-                    throw new UnexpectedValueException('"kid" invalid, unable to lookup correct key');
+                    throw new UnexpectedValueException(static::$ERR_INVALID_KID);
                 }
                 $key = $key[$header->kid];
             } else {
-                throw new UnexpectedValueException('"kid" empty, unable to lookup correct key');
+                throw new UnexpectedValueException(static::$ERR_EMPTY_KID);
             }
         }
 
         // Check the signature
         if (!static::verify("$headb64.$bodyb64", $sig, $key, $header->alg)) {
-            throw new SignatureInvalidException('Signature verification failed');
+            throw new SignatureInvalidException(static::$ERR_SIGNATURE_VERIFICATION);
         }
 
         // Check if the nbf if it is defined. This is the time that the
@@ -133,7 +149,7 @@ class JWT
 
         // Check if this token has expired.
         if (isset($payload->exp) && ($timestamp - static::$leeway) >= $payload->exp) {
-            throw new ExpiredException('Expired token');
+            throw new ExpiredException(static::$ERR_EXPIRED_TOKEN);
         }
 
         return $payload;

@@ -1339,7 +1339,7 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         throw new moodle_exception('errorincorrectconsumerkey', 'mod_lti');
     }
 
-    if ($typeconfig['keytype'] === 'RSA_KEY') {
+    if (empty($typeconfig['keytype']) || $typeconfig['keytype'] === 'RSA_KEY') {
         $publickey = $typeconfig['publickey'] ?? '';
         if (empty($publickey)) {
             throw new moodle_exception('No public key configured');
@@ -1351,28 +1351,28 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
             throw new moodle_exception('No public keyset configured');
         }
         $cache = cache::make('mod_lti', 'keyset');
-        
-        // Attempts to retrieve keyset from cache
+
+        // Attempts to retrieve keyset from cache.
         $keyset = $cache->get($tool->clientid);
         if (!$keyset) {
-            $keyset = file_get_contents($keyseturl); 
+            $keyset = file_get_contents($keyseturl);
             $keys = JWK::parseKeySet($keyset);
             JWT::decode($jwtparam, $keys, array('RS256'));
-            // If decode is successful, updates cached keyset
+            // If decode is successful, updates cached keyset.
             $cache->set($tool->clientid, $keyset);
         } else {
-            // If keyset was found
+            // If keyset was found.
             try {
                 $keys = JWK::parseKeySet($keyset);
                 JWT::decode($jwtparam, $keys, array('RS256'));
             } catch (Exception $e) {
                 $message = $e->getMessage();
-                // Couldn't retrieve correct key from cache, updates cached keyset 
-                if ($message === '"kid" invalid, unable to lookup correct key') {
+                // Couldn't retrieve correct key from cache, updates cached keyset.
+                if ($message === JWT::$ERR_INVALID_KID) {
                     $keyset = file_get_contents($keyseturl);
                     $keys = JWK::parseKeySet($keyset);
                     JWT::decode($jwtparam, $keys, array('RS256'));
-                    // If decode is successful, updates cached keyset
+                    // If decode is successful, updates cached keyset.
                     $cache->set($tool->clientid, $keyset);
                 }
             }
@@ -1380,7 +1380,6 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
     } else {
         throw new moodle_exception('Invalid public key type');
     }
-    
 
     return $tool;
 }

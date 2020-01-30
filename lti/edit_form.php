@@ -129,7 +129,6 @@ class mod_lti_edit_types_form extends moodleform {
                 $mform->setType('lti_clientid', PARAM_TEXT);
             }
 
-            
             $keyoptions = array(
                 RSA_KEY => get_string('keytype_rsa', 'lti'),
                 JWK_KEYSET => get_string('keytype_keyset', 'lti'),
