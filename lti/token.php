@@ -32,9 +32,6 @@ use \Firebase\JWT\JWK;
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/lti/locallib.php');
 
-// Defines cache.
-$cache = cache::make('mod_lti', 'keyset');
-
 $response = new \mod_lti\local\ltiservice\response();
 
 $contenttype = isset($_SERVER['CONTENT_TYPE']) ? explode(';', $_SERVER['CONTENT_TYPE'], 2)[0] : '';
