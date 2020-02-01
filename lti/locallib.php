@@ -91,6 +91,8 @@ define('LTI_COURSEVISIBLE_ACTIVITYCHOOSER', 2);
 define('LTI_VERSION_1', 'LTI-1p0');
 define('LTI_VERSION_2', 'LTI-2p0');
 define('LTI_VERSION_1P3', '1.3.0');
+define('RSA_KEY', 'RSA_KEY');
+define('JWK_KEYSET', 'JWK_KEYSET');
 
 define('LTI_ACCESS_TOKEN_LIFE', 3600);
 
@@ -1339,13 +1341,13 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         throw new moodle_exception('errorincorrectconsumerkey', 'mod_lti');
     }
 
-    if (empty($typeconfig['keytype']) || $typeconfig['keytype'] === 'RSA_KEY') {
+    if (empty($typeconfig['keytype']) || $typeconfig['keytype'] === RSA_KEY) {
         $publickey = $typeconfig['publickey'] ?? '';
         if (empty($publickey)) {
             throw new moodle_exception('No public key configured');
         }
         JWT::decode($jwtparam, $publickey, array('RS256'));
-    } else if ($typeconfig['keytype'] === 'JWK_KEYSET') {
+    } else if ($typeconfig['keytype'] === JWK_KEYSET) {
         $keyseturl = $typeconfig['publickeyset'] ?? '';
         if (empty($keyseturl)) {
             throw new moodle_exception('No public keyset configured');
@@ -1368,7 +1370,7 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 // Couldn't retrieve correct key from cache, updates cached keyset.
-                if ($message === JWT::$ERR_INVALID_KID) {
+                if ($message === JWT::$errinvalidkid) {
                     $keyset = file_get_contents($keyseturl);
                     $keys = JWK::parseKeySet($keyset);
                     JWT::decode($jwtparam, $keys, array('RS256'));
