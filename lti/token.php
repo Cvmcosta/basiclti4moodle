@@ -26,8 +26,6 @@ define('NO_DEBUG_DISPLAY', true);
 define('NO_MOODLE_COOKIES', true);
 
 use \Firebase\JWT\JWT;
-use \Firebase\JWT\JWK;
-
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/lti/locallib.php');
