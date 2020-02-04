@@ -93,6 +93,8 @@ define('LTI_VERSION_2', 'LTI-2p0');
 define('LTI_VERSION_1P3', '1.3.0');
 define('RSA_KEY', 'RSA_KEY');
 define('JWK_KEYSET', 'JWK_KEYSET');
+define('REDIRECT_MOBILE', '1');
+define('NO_REDIRECT_MOBILE', '0');
 
 define('LTI_ACCESS_TOKEN_LIFE', 3600);
 
@@ -2506,6 +2508,9 @@ function lti_get_type_type_config($id) {
     if (isset($config['keytype'])) {
         $type->lti_keytype = $config['keytype'];
     }
+    if (isset($config['redirectmobile'])) {
+        $type->lti_redirectmobile = $config['redirectmobile'];
+    }
     if (isset($config['initiatelogin'])) {
         $type->lti_initiatelogin = $config['initiatelogin'];
     }
@@ -3397,8 +3402,9 @@ function lti_get_launch_container($lti, $toolconfig) {
 
     // Scrolling within the object element doesn't work on iOS or Android
     // Opening the popup window also had some issues in testing
-    // For mobile devices, always take up the entire screen to ensure the best experience.
-    if ($devicetype === core_useragent::DEVICETYPE_MOBILE || $devicetype === core_useragent::DEVICETYPE_TABLET ) {
+    // For mobile devices, gives the option to take up the entire screen to ensure the best experience.
+    $redirectmobile = $toolconfig['redirectmobile'] ?? '';
+    if (($devicetype === core_useragent::DEVICETYPE_MOBILE || $devicetype === core_useragent::DEVICETYPE_TABLET) && $redirectmobile !== NO_REDIRECT_MOBILE) {
         $launchcontainer = LTI_LAUNCH_CONTAINER_REPLACE_MOODLE_WINDOW;
     }
 

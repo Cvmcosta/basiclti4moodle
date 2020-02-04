@@ -214,6 +214,10 @@ class mod_lti_edit_types_form extends moodleform {
         $mform->addHelpButton('lti_launchcontainer', 'default_launch_container', 'lti');
         $mform->setType('lti_launchcontainer', PARAM_INT);
 
+        $mform->addElement('advcheckbox', 'lti_redirectmobile', get_string('redirectmobile', 'lti'), null, null, array(NO_REDIRECT_MOBILE, REDIRECT_MOBILE));
+        $mform->addHelpButton('lti_redirectmobile', 'redirectmobile', 'lti');
+        $mform->setDefault('lti_redirectmobile', REDIRECT_MOBILE);
+
         $mform->addElement('advcheckbox', 'lti_contentitem', get_string('contentitem', 'lti'));
         $mform->addHelpButton('lti_contentitem', 'contentitem', 'lti');
         $mform->setAdvanced('lti_contentitem');
