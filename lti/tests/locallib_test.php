@@ -1104,7 +1104,7 @@ MwIDAQAB
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
         $config = new stdClass();
-        $config->lti_publickeyset = './test_keyset';
+        $config->lti_publickeyset = dirname(__FILE__) . '/test_keyset';
 
         $config->lti_keytype = 'JWK_KEYSET';
 
