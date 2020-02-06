@@ -15,18 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for the ltiservice_memberships service.
+ * LTI subplugin types declaration
  *
- * @package    ltiservice_memberships
- * @copyright  2015 Vital Source Technologies http://vitalsource.com
- * @author     Stephen Vickers
+ * @package    mod_lti
+ * @copyright  2012 Mark Nielsen
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
 
-
-$plugin->version   = 2019052000;
-$plugin->requires  = 2019051100;
-$plugin->component = 'ltiservice_memberships';
+$subplugins = array(
+    'ltisource' => 'mod/lti/source',
+    'ltiservice' => 'mod/lti/service'
+);

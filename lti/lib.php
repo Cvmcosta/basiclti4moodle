@@ -219,9 +219,7 @@ function lti_get_shortcuts($defaultitem) {
     require_once($CFG->dirroot.'/mod/lti/locallib.php');
 
     $types = lti_get_configured_types($COURSE->id, $defaultitem->link->param('sr'));
-    if (has_capability('mod/lti:addmanualinstance', context_course::instance($COURSE->id))) {
-        $types[] = $defaultitem;
-    }
+    $types[] = $defaultitem;
 
     // Add items defined in ltisource plugins.
     foreach (core_component::get_plugin_list('ltisource') as $pluginname => $dir) {
@@ -365,11 +363,26 @@ function lti_grades($basicltiid) {
 }
 
 /**
- * @deprecated since Moodle 3.8
- */
-function lti_scale_used() {
-    throw new coding_exception('lti_scale_used() can not be used anymore. Plugins can implement ' .
-        '<modname>_scale_used_anywhere, all implementations of <modname>_scale_used are now ignored');
+ * This function returns if a scale is being used by one basiclti
+ * it it has support for grading and scales. Commented code should be
+ * modified if necessary. See forum, glossary or journal modules
+ * as reference.
+ *
+ * @param int $basicltiid ID of an instance of this module
+ * @return mixed
+ *
+ * @TODO: implement this moodle function (if needed)
+ **/
+function lti_scale_used ($basicltiid, $scaleid) {
+    $return = false;
+
+    // $rec = get_record("basiclti","id","$basicltiid","scale","-$scaleid");
+    //
+    // if (!empty($rec)  && !empty($scaleid)) {
+    //     $return = true;
+    // }
+
+    return $return;
 }
 
 /**
