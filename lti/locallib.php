@@ -53,9 +53,9 @@ defined('MOODLE_INTERNAL') || die;
 // TODO: Switch to core oauthlib once implemented - MDL-30149.
 use moodle\mod\lti as lti;
 use \Firebase\JWT\JWT;
-use \Firebase\JWT\JWK;
 
 global $CFG;
+require_once($CFG->dirroot.'/mod/lti/JWK.php');
 require_once($CFG->dirroot.'/mod/lti/OAuth.php');
 require_once($CFG->libdir.'/weblib.php');
 require_once($CFG->dirroot . '/course/modlib.php');
@@ -1358,21 +1358,21 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         $keyset = $cache->get($tool->clientid);
         if (!$keyset) {
             $keyset = file_get_contents($keyseturl);
-            $keys = JWK::parseKeySet($keyset);
+            $keys = parseKeySet($keyset);
             JWT::decode($jwtparam, $keys, array('RS256'));
             // If decode is successful, updates cached keyset.
             $cache->set($tool->clientid, $keyset);
         } else {
             // If keyset was found.
             try {
-                $keys = JWK::parseKeySet($keyset);
+                $keys = parseKeySet($keyset);
                 JWT::decode($jwtparam, $keys, array('RS256'));
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 // Couldn't retrieve correct key from cache, updates cached keyset.
                 if ($message === JWT::$errinvalidkid) {
                     $keyset = file_get_contents($keyseturl);
-                    $keys = JWK::parseKeySet($keyset);
+                    $keys = parseKeySet($keyset);
                     JWT::decode($jwtparam, $keys, array('RS256'));
                     // If decode is successful, updates cached keyset.
                     $cache->set($tool->clientid, $keyset);
