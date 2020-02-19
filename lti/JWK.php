@@ -98,8 +98,7 @@ function parseKeySet($source) {
  * @param $source
  * @return resource|array an associative array represents the key
  */
-function parseKey($source)
-{
+function parseKey($source) {
     if (!is_array($source))
         $source = (array)$source;
     if (!empty($source) && isset($source['kty']) && isset($source['n']) && isset($source['e'])) {
@@ -130,16 +129,15 @@ function parseKey($source)
  * @param string $e the RSA exponent encoded in Base64
  * @return string the RSA public key represented in PEM format
  */
-function createPemFromModulusAndExponent($n, $e)
-{
+function createPemFromModulusAndExponent($n, $e) {
     $modulus = JWT::urlsafeB64Decode($n);
     $publicExponent = JWT::urlsafeB64Decode($e);
 
 
-    $components = array(
+    $components = [
         'modulus' => pack('Ca*a*', 2, encodeLength(strlen($modulus)), $modulus),
         'publicExponent' => pack('Ca*a*', 2, encodeLength(strlen($publicExponent)), $publicExponent)
-    );
+    ];
 
     $RSAPublicKey = pack(
         'Ca*a*a*',
@@ -179,8 +177,7 @@ function createPemFromModulusAndExponent($n, $e)
  * @param int $length
  * @return string
  */
-function encodeLength($length)
-{
+function encodeLength($length) {
     if ($length <= 0x7F) {
         return chr($length);
     }

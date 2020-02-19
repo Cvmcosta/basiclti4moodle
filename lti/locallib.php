@@ -1308,6 +1308,40 @@ function lti_verify_oauth_signature($typeid, $consumerkey) {
 }
 
 /**
+ * Verifies the JWT signature using a JWK keyset.
+ *
+ * @param string $jwtparam JWT parameter value.
+ * @param string $keyseturl The tool keyseturl.
+ * @param string $clientid The tool client id.
+ *
+ * @return object The JWT's payload as a PHP object
+ * @throws moodle_exception
+ * @throws UnexpectedValueException     Provided JWT was invalid
+ * @throws SignatureInvalidException    Provided JWT was invalid because the signature verification failed
+ * @throws BeforeValidException         Provided JWT is trying to be used before it's eligible as defined by 'nbf'
+ * @throws BeforeValidException         Provided JWT is trying to be used before it's been created as defined by 'iat'
+ * @throws ExpiredException             Provided JWT has since expired, as defined by the 'exp' claim
+ */
+function lti_verify_with_keyset($jwtparam, $keyseturl, $clientid) {
+    // Attempts to retrieve cached keyset.
+    $cache = cache::make('mod_lti', 'keyset');
+    $keyset = $cache->get($clientid);
+
+    try {
+        $keys = parseKeySet($keyset);
+        $jwt = JWT::decode($jwtparam, $keys, ['RS256']);
+    } catch (Exception $e) {
+        // Something went wrong, so attempt to update cached keyset and then try again.
+        $keyset = file_get_contents($keyseturl);
+        $keys = parseKeySet($keyset);
+        $jwt = JWT::decode($jwtparam, $keys, ['RS256']);
+        // If sucessful, updates the cached keyset.
+        $cache->set($clientid, $keyset);
+    }
+    return $jwt;
+}
+
+/**
  * Verifies the JWT signature of an incoming message.
  *
  * @param int $typeid The tool type ID.
@@ -1346,39 +1380,15 @@ function lti_verify_jwt_signature($typeid, $consumerkey, $jwtparam) {
         if (empty($publickey)) {
             throw new moodle_exception('No public key configured');
         }
-        JWT::decode($jwtparam, $publickey, array('RS256'));
+        // Attemps to verify jwt with RSA key.
+        JWT::decode($jwtparam, $publickey, ['RS256']);
     } else if ($typeconfig['keytype'] === JWK_KEYSET) {
         $keyseturl = $typeconfig['publickeyset'] ?? '';
         if (empty($keyseturl)) {
             throw new moodle_exception('No public keyset configured');
         }
-        $cache = cache::make('mod_lti', 'keyset');
-
-        // Attempts to retrieve keyset from cache.
-        $keyset = $cache->get($tool->clientid);
-        if (!$keyset) {
-            $keyset = file_get_contents($keyseturl);
-            $keys = parseKeySet($keyset);
-            JWT::decode($jwtparam, $keys, array('RS256'));
-            // If decode is successful, updates cached keyset.
-            $cache->set($tool->clientid, $keyset);
-        } else {
-            // If keyset was found.
-            try {
-                $keys = parseKeySet($keyset);
-                JWT::decode($jwtparam, $keys, array('RS256'));
-            } catch (Exception $e) {
-                $message = $e->getMessage();
-                // Couldn't retrieve correct key from cache, updates cached keyset.
-                if ($message === JWT::$errinvalidkid) {
-                    $keyset = file_get_contents($keyseturl);
-                    $keys = parseKeySet($keyset);
-                    JWT::decode($jwtparam, $keys, array('RS256'));
-                    // If decode is successful, updates cached keyset.
-                    $cache->set($tool->clientid, $keyset);
-                }
-            }
-        }
+        // Attempts to verify jwt with jwk keyset.
+        lti_verify_with_keyset($jwtparam, $keyseturl, $tool->clientid);
     } else {
         throw new moodle_exception('Invalid public key type');
     }
