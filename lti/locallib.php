@@ -1328,12 +1328,12 @@ function lti_verify_with_keyset($jwtparam, $keyseturl, $clientid) {
     $keyset = $cache->get($clientid);
 
     try {
-        $keys = parseKeySet($keyset);
+        $keys = parsekeyset($keyset);
         $jwt = JWT::decode($jwtparam, $keys, ['RS256']);
     } catch (Exception $e) {
         // Something went wrong, so attempt to update cached keyset and then try again.
         $keyset = file_get_contents($keyseturl);
-        $keys = parseKeySet($keyset);
+        $keys = parsekeyset($keyset);
         $jwt = JWT::decode($jwtparam, $keys, ['RS256']);
         // If sucessful, updates the cached keyset.
         $cache->set($clientid, $keyset);
@@ -2235,6 +2235,7 @@ function lti_get_configured_types($courseid, $sectionreturn = 0) {
 
     foreach ($admintypes as $ltitype) {
         $type           = new stdClass();
+        $type->id       = $ltitype->id;
         $type->modclass = MOD_CLASS_ACTIVITY;
         $type->name     = 'lti_type_' . $ltitype->id;
         // Clean the name. We don't want tags here.

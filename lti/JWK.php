@@ -34,11 +34,7 @@
 
 /**
  * This file contains the JWK functionalities used to allow the usage of JWK keyset as a way to validate JWTs in requests.
- * This file is an adaptation of the fproject/php-jwt/JWK.php file. created by Bui Sy Nguyen <nguyenbs@gmail.com>.
  *
- * JSON Web Key implementation, based on this spec:
- * https://tools.ietf.org/html/draft-ietf-jose-json-web-key-41
- * 
  * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
@@ -47,6 +43,7 @@
  * @author     Jordi Piguillem
  * @author     Nikolas Galanis
  * @author     Chris Scribner
+ * @author     Bui Sy Nguyen
  * @copyright  2015 Vital Source Technologies http://vitalsource.com
  * @author     Stephen Vickers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -57,33 +54,42 @@ defined('MOODLE_INTERNAL') || die;
 use \Firebase\JWT\JWT;
 use UnexpectedValueException;
 
-function parseKeySet($source) {
+/**
+ * Parse a JWK keyset.
+ *
+ * @param object $source Keyset to be parsed.
+ * @return array an associative array represents the keys.
+ */
+function parsekeyset($source) {
     $keys = [];
     if (is_string($source)) {
         $source = json_decode($source, true);
     } else if (is_object($source)) {
-        if (property_exists($source, 'keys'))
+        if (property_exists($source, 'keys')) {
             $source = (array)$source;
-        else
+        } else {
             $source = [$source];
+        }
     }
 
     if (is_array($source)) {
-        if (isset($source['keys']))
+        if (isset($source['keys'])) {
             $source = $source['keys'];
+        }
 
         foreach ($source as $k => $v) {
             if (!is_string($k)) {
-                if (is_array($v) && isset($v['kid']))
+                if (is_array($v) && isset($v['kid'])) {
                     $k = $v['kid'];
-                elseif (is_object($v) && property_exists($v, 'kid'))
+                } else if (is_object($v) && property_exists($v, 'kid')) {
                     $k = $v->{'kid'};
+                }
             }
             try {
-                $v = parseKey($v);
+                $v = parsekey($v);
                 $keys[$k] = $v;
             } catch (UnexpectedValueException $e) {
-                //Do nothing
+                $err = $e;
             }
         }
     }
@@ -94,26 +100,30 @@ function parseKeySet($source) {
 }
 
 /**
- * Parse a JWK key
- * @param $source
- * @return resource|array an associative array represents the key
+ * Parse a JWK key.
+ *
+ * @param array $source JWK key to be parsed.
+ * @return resource|array an associative array represents the key.
  */
-function parseKey($source) {
-    if (!is_array($source))
+function parsekey($source) {
+    if (!is_array($source)) {
         $source = (array)$source;
+    }
     if (!empty($source) && isset($source['kty']) && isset($source['n']) && isset($source['e'])) {
         switch ($source['kty']) {
             case 'RSA':
-                if (array_key_exists('d', $source))
+                if (array_key_exists('d', $source)) {
                     throw new UnexpectedValueException('Failed to parse JWK: RSA private key is not supported');
+                }
 
-                $pem = createPemFromModulusAndExponent($source['n'], $source['e']);
-                $pKey = openssl_pkey_get_public($pem);
-                if ($pKey !== false)
-                    return $pKey;
+                $pem = create_pem_from_modulus_and_exponent($source['n'], $source['e']);
+                $pkey = openssl_pkey_get_public($pem);
+                if ($pkey !== false) {
+                    return $pkey;
+                }
                 break;
             default:
-                //Currently only RSA is supported
+                // Currently only RSA is supported.
                 break;
         }
     }
@@ -129,42 +139,39 @@ function parseKey($source) {
  * @param string $e the RSA exponent encoded in Base64
  * @return string the RSA public key represented in PEM format
  */
-function createPemFromModulusAndExponent($n, $e) {
+function create_pem_from_modulus_and_exponent($n, $e) {
     $modulus = JWT::urlsafeB64Decode($n);
-    $publicExponent = JWT::urlsafeB64Decode($e);
-
+    $publicexponent = JWT::urlsafeB64Decode($e);
 
     $components = [
-        'modulus' => pack('Ca*a*', 2, encodeLength(strlen($modulus)), $modulus),
-        'publicExponent' => pack('Ca*a*', 2, encodeLength(strlen($publicExponent)), $publicExponent)
+        'modulus' => pack('Ca*a*', 2, encodelength(strlen($modulus)), $modulus),
+        'publicexponent' => pack('Ca*a*', 2, encodelength(strlen($publicexponent)), $publicexponent)
     ];
 
-    $RSAPublicKey = pack(
+    $rsapublickey = pack(
         'Ca*a*a*',
         48,
-        encodeLength(strlen($components['modulus']) + strlen($components['publicExponent'])),
+        encodelength(strlen($components['modulus']) + strlen($components['publicexponent'])),
         $components['modulus'],
-        $components['publicExponent']
+        $components['publicexponent']
     );
 
+    $rsaoid = pack('H*', '300d06092a864886f70d0101010500');
+    $rsapublickey = chr(0) . $rsapublickey;
+    $rsapublickey = chr(3) . encodelength(strlen($rsapublickey)) . $rsapublickey;
 
-    // sequence(oid(1.2.840.113549.1.1.1), null)) = rsaEncryption.
-    $rsaOID = pack('H*', '300d06092a864886f70d0101010500'); // hex version of MA0GCSqGSIb3DQEBAQUA
-    $RSAPublicKey = chr(0) . $RSAPublicKey;
-    $RSAPublicKey = chr(3) . encodeLength(strlen($RSAPublicKey)) . $RSAPublicKey;
-
-    $RSAPublicKey = pack(
+    $rsapublickey = pack(
         'Ca*a*',
         48,
-        encodeLength(strlen($rsaOID . $RSAPublicKey)),
-        $rsaOID . $RSAPublicKey
+        encodelength(strlen($rsaoid . $rsapublickey)),
+        $rsaoid . $rsapublickey
     );
 
-    $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n" .
-        chunk_split(base64_encode($RSAPublicKey), 64) .
+    $rsapublickey = "-----BEGIN PUBLIC KEY-----\r\n" .
+        chunk_split(base64_encode($rsapublickey), 64) .
         '-----END PUBLIC KEY-----';
 
-    return $RSAPublicKey;
+    return $rsapublickey;
 }
 
 /**
@@ -173,11 +180,10 @@ function createPemFromModulusAndExponent($n, $e) {
  * DER supports lengths up to (2**8)**127, however, we'll only support lengths up to (2**8)**4.  See
  * {@link http://itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf#p=13 X.690 paragraph 8.1.3} for more information.
  *
- * @access private
  * @param int $length
  * @return string
  */
-function encodeLength($length) {
+function encodelength($length) {
     if ($length <= 0x7F) {
         return chr($length);
     }
@@ -185,4 +191,3 @@ function encodeLength($length) {
     $temp = ltrim(pack('N', $length), chr(0));
     return pack('Ca*', 0x80 | strlen($temp), $temp);
 }
-
