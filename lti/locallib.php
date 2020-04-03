@@ -56,7 +56,6 @@ use \Firebase\JWT\JWT;
 use \Firebase\JWT\JWK;
 
 global $CFG;
-require_once($CFG->dirroot.'/mod/lti/JWK.php');
 require_once($CFG->dirroot.'/mod/lti/OAuth.php');
 require_once($CFG->libdir.'/weblib.php');
 require_once($CFG->dirroot . '/course/modlib.php');
